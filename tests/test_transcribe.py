@@ -4,6 +4,10 @@ from faster_whisper import WhisperModel, decode_audio
 
 
 def test_transcribe(jfk_path):
+    """
+    Tests the transcribe function of the WhisperModel class with a given audio path.
+    It checks if the language probabilities, duration, and segment text are as expected.
+    """
     model = WhisperModel("tiny")
     segments, info = model.transcribe(jfk_path, word_timestamps=True)
     assert info.all_language_probs is not None
@@ -35,6 +39,10 @@ def test_transcribe(jfk_path):
 
 
 def test_prefix_with_timestamps(jfk_path):
+    """
+    Tests the transcribe function of the WhisperModel class with a given prefix.
+    It checks if the number of segments and the segment text are as expected.
+    """
     model = WhisperModel("tiny")
     segments, _ = model.transcribe(jfk_path, prefix="And so my fellow Americans")
     segments = list(segments)
@@ -53,6 +61,10 @@ def test_prefix_with_timestamps(jfk_path):
 
 
 def test_vad(jfk_path):
+    """
+    Tests the transcribe function of the WhisperModel class with Voice Activity Detection (VAD) parameters.
+    It checks if the number of segments, the segment text, and the VAD options are as expected.
+    """
     model = WhisperModel("tiny")
     segments, info = model.transcribe(
         jfk_path,
@@ -77,6 +89,10 @@ def test_vad(jfk_path):
 
 
 def test_stereo_diarization(data_dir):
+    """
+    Tests the transcribe function of the WhisperModel class with a stereo audio.
+    It checks if the transcriptions of the left and right channels are as expected.
+    """
     model = WhisperModel("tiny")
 
     audio_path = os.path.join(data_dir, "stereo_diarization.wav")

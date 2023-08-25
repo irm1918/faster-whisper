@@ -12,23 +12,20 @@ from faster_whisper.utils import get_assets_path
 
 # The code below is adapted from https://github.com/snakers4/silero-vad.
 class VadOptions(NamedTuple):
-    """VAD options.
-
+    """
+    A class used to represent the Voice Activity Detection (VAD) options.
+    
     Attributes:
-      threshold: Speech threshold. Silero VAD outputs speech probabilities for each audio chunk,
-        probabilities ABOVE this value are considered as SPEECH. It is better to tune this
-        parameter for each dataset separately, but "lazy" 0.5 is pretty good for most datasets.
-      min_speech_duration_ms: Final speech chunks shorter min_speech_duration_ms are thrown out.
-      max_speech_duration_s: Maximum duration of speech chunks in seconds. Chunks longer
-        than max_speech_duration_s will be split at the timestamp of the last silence that
-        lasts more than 100ms (if any), to prevent aggressive cutting. Otherwise, they will be
-        split aggressively just before max_speech_duration_s.
-      min_silence_duration_ms: In the end of each speech chunk wait for min_silence_duration_ms
-        before separating it
-      window_size_samples: Audio chunks of window_size_samples size are fed to the silero VAD model.
-        WARNING! Silero VAD models were trained using 512, 1024, 1536 samples for 16000 sample rate.
-        Values other than these may affect model performance!!
-      speech_pad_ms: Final speech chunks are padded by speech_pad_ms each side
+        threshold (float): Speech threshold. Silero VAD outputs speech probabilities for each audio chunk,
+            probabilities above this value are considered as speech. Default value is 0.5.
+        min_speech_duration_ms (int): Minimum duration of speech chunks in milliseconds. Chunks shorter than this 
+            are discarded. Default value is 250.
+        max_speech_duration_s (float): Maximum duration of speech chunks in seconds. Chunks longer than this will be 
+            split. Default value is infinity.
+        min_silence_duration_ms (int): Minimum duration of silence chunks in milliseconds. Chunks shorter than this 
+            are discarded. Default value is 2000.
+        window_size_samples (int): Size of audio chunks fed to the silero VAD model. Default value is 1024.
+        speech_pad_ms (int): Padding added to each side of the final speech chunks in milliseconds. Default value is 400.
     """
 
     threshold: float = 0.5
@@ -44,15 +41,16 @@ def get_speech_timestamps(
     vad_options: Optional[VadOptions] = None,
     **kwargs,
 ) -> List[dict]:
-    """This method is used for splitting long audios into speech chunks using silero VAD.
-
+    """
+    This method is used for splitting long audios into speech chunks using silero VAD.
+    
     Args:
-      audio: One dimensional float array.
-      vad_options: Options for VAD processing.
-      kwargs: VAD options passed as keyword arguments for backward compatibility.
-
+        audio (np.ndarray): One dimensional float array representing the audio.
+        vad_options (Optional[VadOptions]): Options for VAD processing. Default is None.
+        kwargs: VAD options passed as keyword arguments for backward compatibility.
+    
     Returns:
-      List of dicts containing begin and end samples of each speech chunk.
+        List[dict]: List of dictionaries containing begin and end samples of each speech chunk.
     """
     if vad_options is None:
         vad_options = VadOptions(**kwargs)
@@ -189,7 +187,16 @@ def get_speech_timestamps(
 
 
 def collect_chunks(audio: np.ndarray, chunks: List[dict]) -> np.ndarray:
-    """Collects and concatenates audio chunks."""
+    """
+    Collects and concatenates audio chunks.
+    
+    Args:
+        audio (np.ndarray): One dimensional float array representing the audio.
+        chunks (List[dict]): List of dictionaries containing begin and end samples of each speech chunk.
+    
+    Returns:
+        np.ndarray: Concatenated audio chunks.
+    """
     if not chunks:
         return np.array([], dtype=np.float32)
 
@@ -197,7 +204,13 @@ def collect_chunks(audio: np.ndarray, chunks: List[dict]) -> np.ndarray:
 
 
 class SpeechTimestampsMap:
-    """Helper class to restore original speech timestamps."""
+    """
+    A helper class to restore original speech timestamps.
+    
+    Attributes:
+        sampling_rate (int): The sampling rate of the audio.
+        time_precision (int): The precision of the time in number of decimal places. Default value is 2.
+    """
 
     def __init__(self, chunks: List[dict], sampling_rate: int, time_precision: int = 2):
         self.sampling_rate = sampling_rate
@@ -236,12 +249,23 @@ class SpeechTimestampsMap:
 
 @functools.lru_cache
 def get_vad_model():
-    """Returns the VAD model instance."""
+    """
+    Returns the VAD model instance.
+    
+    Returns:
+        SileroVADModel: The VAD model instance.
+    """
     path = os.path.join(get_assets_path(), "silero_vad.onnx")
     return SileroVADModel(path)
 
 
 class SileroVADModel:
+    """
+    A class used to represent the Silero Voice Activity Detection (VAD) model.
+    
+    Attributes:
+        path (str): The path to the Silero VAD model.
+    """
     def __init__(self, path):
         try:
             import onnxruntime

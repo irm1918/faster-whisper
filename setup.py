@@ -6,12 +6,24 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_long_description():
+    """
+    Reads the README.md file and returns it as a string.
+    
+    Returns:
+        str: Contents of the README.md file.
+    """
     readme_path = os.path.join(base_dir, "README.md")
     with open(readme_path, encoding="utf-8") as readme_file:
         return readme_file.read()
 
 
 def get_project_version():
+    """
+    Reads the version.py file and returns the version of the project.
+    
+    Returns:
+        str: Version of the project.
+    """
     version_path = os.path.join(base_dir, "faster_whisper", "version.py")
     version = {}
     with open(version_path, encoding="utf-8") as fp:
@@ -20,6 +32,15 @@ def get_project_version():
 
 
 def get_requirements(path):
+    """
+    Reads the requirements file and returns a list of requirements.
+    
+    Args:
+        path (str): Path to the requirements file.
+    
+    Returns:
+        list: List of requirements.
+    """
     with open(path, encoding="utf-8") as requirements:
         return [requirement.strip() for requirement in requirements]
 

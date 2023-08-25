@@ -22,6 +22,16 @@ from faster_whisper.vad import (
 
 
 class Word(NamedTuple):
+    """
+    A NamedTuple representing a word in the transcription. It includes the start and end times,
+    the word itself, and the probability of the word.
+    
+    Attributes:
+        start (float): The start time of the word in the audio.
+        end (float): The end time of the word in the audio.
+        word (str): The transcribed word.
+        probability (float): The probability of the word.
+    """
     start: float
     end: float
     word: str
@@ -29,6 +39,24 @@ class Word(NamedTuple):
 
 
 class Segment(NamedTuple):
+    """
+    A NamedTuple representing a segment in the transcription. It includes the id, seek, start and
+    end times, the transcribed text, tokens, temperature, average log probability, compression
+    ratio, no speech probability, and words.
+    
+    Attributes:
+        id (int): The id of the segment.
+        seek (int): The seek of the segment.
+        start (float): The start time of the segment in the audio.
+        end (float): The end time of the segment in the audio.
+        text (str): The transcribed text of the segment.
+        tokens (List[int]): The tokens of the transcribed text.
+        temperature (float): The temperature used for sampling.
+        avg_logprob (float): The average log probability of the transcribed text.
+        compression_ratio (float): The compression ratio of the transcribed text.
+        no_speech_prob (float): The no speech probability of the segment.
+        words (Optional[List[Word]]): The words in the segment.
+    """
     id: int
     seek: int
     start: float
@@ -43,6 +71,41 @@ class Segment(NamedTuple):
 
 
 class TranscriptionOptions(NamedTuple):
+    """
+    A NamedTuple representing the options for transcription. It includes beam size, best of,
+    patience, length penalty, repetition penalty, log probability threshold, no speech threshold,
+    compression ratio threshold, condition on previous text, prompt reset on temperature,
+    temperatures, initial prompt, prefix, suppress blank, suppress tokens, without timestamps,
+    max initial timestamp, word timestamps, prepend punctuations, and append punctuations.
+    
+    Attributes:
+        beam_size (int): Beam size to use for decoding.
+        best_of (int): Number of candidates when sampling with non-zero temperature.
+        patience (float): Beam search patience factor.
+        length_penalty (float): Exponential length penalty constant.
+        repetition_penalty (float): Penalty applied to the score of previously generated tokens.
+        log_prob_threshold (Optional[float]): If the average log probability over sampled tokens is
+            below this value, treat as failed.
+        no_speech_threshold (Optional[float]): If the no_speech probability is higher than this
+            value AND the average log probability over sampled tokens is below `log_prob_threshold`,
+            consider the segment as silent.
+        compression_ratio_threshold (Optional[float]): If the gzip compression ratio is above this
+            value, treat as failed.
+        condition_on_previous_text (bool): If True, the previous output of the model is provided
+            as a prompt for the next window.
+        prompt_reset_on_temperature (float): Resets prompt if temperature is above this value.
+        temperatures (List[float]): Temperature for sampling.
+        initial_prompt (Optional[Union[str, Iterable[int]]]): Optional text string or iterable of
+            token ids to provide as a prompt for the first window.
+        prefix (Optional[str]): Optional text to provide as a prefix for the first window.
+        suppress_blank (bool): Suppress blank outputs at the beginning of the sampling.
+        suppress_tokens (Optional[List[int]]): List of token IDs to suppress.
+        without_timestamps (bool): Only sample text tokens.
+        max_initial_timestamp (float): The initial timestamp cannot be later than this.
+        word_timestamps (bool): Extract word-level timestamps using the cross-attention pattern.
+        prepend_punctuations (str): Merge these punctuation symbols with the next word.
+        append_punctuations (str): Merge these punctuation symbols with the previous word.
+    """
     beam_size: int
     best_of: int
     patience: float
@@ -66,6 +129,20 @@ class TranscriptionOptions(NamedTuple):
 
 
 class TranscriptionInfo(NamedTuple):
+    """
+    A NamedTuple representing the information of the transcription. It includes language,
+    language probability, duration, all language probabilities, transcription options, and
+    voice activity detection options.
+    
+    Attributes:
+        language (str): The language spoken in the audio.
+        language_probability (float): The probability of the detected language.
+        duration (float): The duration of the audio.
+        all_language_probs (Optional[List[Tuple[str, float]]]): The probabilities of all detected
+            languages.
+        transcription_options (TranscriptionOptions): The options used for the transcription.
+        vad_options (VadOptions): The options used for the voice activity detection.
+    """
     language: str
     language_probability: float
     duration: float
@@ -86,8 +163,9 @@ class WhisperModel:
         download_root: Optional[str] = None,
         local_files_only: bool = False,
     ):
-        """Initializes the Whisper model.
-
+        """
+        Initializes the Whisper model.
+        
         Args:
           model_size_or_path: Size of the model to use (tiny, tiny.en, base, base.en,
             small, small.en, medium, medium.en, large-v1, or large-v2), a path to a converted
@@ -187,8 +265,9 @@ class WhisperModel:
         vad_filter: bool = False,
         vad_parameters: Optional[Union[dict, VadOptions]] = None,
     ) -> Tuple[Iterable[Segment], TranscriptionInfo]:
-        """Transcribes an input file.
-
+        """
+        Transcribes an input file.
+        
         Arguments:
           audio: Path to the input file (or a file-like object), or the audio waveform.
           language: The language spoken in the audio. It should be a language code such
@@ -236,10 +315,10 @@ class WhisperModel:
             https://github.com/snakers4/silero-vad.
           vad_parameters: Dictionary of Silero VAD parameters or VadOptions class (see available
             parameters and default values in the class `VadOptions`).
-
+        
         Returns:
           A tuple with:
-
+        
             - a generator over transcribed segments
             - an instance of TranscriptionInfo
         """
@@ -366,6 +445,18 @@ class WhisperModel:
         options: TranscriptionOptions,
         encoder_output: Optional[ctranslate2.StorageView] = None,
     ) -> Iterable[Segment]:
+        """
+        Generates segments for transcription.
+        
+        Args:
+          features: The audio features.
+          tokenizer: The tokenizer to use.
+          options: The transcription options.
+          encoder_output: The output of the encoder. If None, the encoder is run on the segment.
+          
+        Returns:
+          An iterable over the transcribed segments.
+        """
         content_frames = features.shape[-1] - self.feature_extractor.nb_max_frames
         idx = 0
         seek = 0
@@ -583,6 +674,15 @@ class WhisperModel:
                 prompt_reset_since = len(all_tokens)
 
     def encode(self, features: np.ndarray) -> ctranslate2.StorageView:
+        """
+        Encodes the audio features.
+        
+        Args:
+          features: The audio features.
+          
+        Returns:
+          The encoder output.
+        """
         # When the model is running on multiple GPUs, the encoder output should be moved
         # to the CPU since we don't know which GPU will handle the next job.
         to_cpu = self.model.device == "cuda" and len(self.model.device_index) > 1
@@ -599,6 +699,22 @@ class WhisperModel:
         tokenizer: Tokenizer,
         options: TranscriptionOptions,
     ) -> Tuple[ctranslate2.models.WhisperGenerationResult, float, float, float]:
+        """
+        Generates transcriptions with fallback options. This function attempts to generate transcriptions
+        using different temperature settings. If the transcriptions do not meet the specified thresholds,
+        it falls back to the next temperature setting. If all attempts fail, it selects the result with 
+        the highest average log probability.
+        
+        Args:
+            encoder_output: The output from the encoder.
+            prompt: The prompt to be used for generating the transcription.
+            tokenizer: The tokenizer to be used for tokenizing the transcription.
+            options: The transcription options.
+            
+        Returns:
+            A tuple containing the result of the transcription, the average log probability, the temperature
+            used, and the compression ratio.
+        """
         decode_result = None
         all_results = []
         below_cr_threshold_results = []
@@ -704,6 +820,20 @@ class WhisperModel:
         without_timestamps: bool = False,
         prefix: Optional[str] = None,
     ) -> List[int]:
+        """
+        Gets the prompt for the transcription. The prompt is a list of tokens that is used to initiate the
+        transcription process. It can include tokens from previous transcriptions, a special sequence start
+        token, a no timestamps token, and tokens from a specified prefix.
+        
+        Args:
+            tokenizer: The tokenizer to be used for tokenizing the prompt.
+            previous_tokens: The tokens from the previous transcription.
+            without_timestamps: A flag indicating whether timestamps should be included in the prompt.
+            prefix: An optional prefix to be included in the prompt.
+            
+        Returns:
+            A list of tokens representing the prompt.
+        """
         prompt = []
 
         if previous_tokens:
@@ -735,6 +865,20 @@ class WhisperModel:
         append_punctuations: str,
         last_speech_timestamp: float,
     ):
+        """
+        Adds word-level timestamps to the transcriptions. This function uses the alignment between the
+        encoder output and the text tokens to calculate the start and end times for each word. It also
+        applies a median filter to smooth the timestamps and merges punctuations with the adjacent words.
+        
+        Args:
+            segments: The transcribed segments.
+            tokenizer: The tokenizer to be used for tokenizing the segments.
+            encoder_output: The output from the encoder.
+            num_frames: The number of frames in the audio.
+            prepend_punctuations: The punctuations to be merged with the next word.
+            append_punctuations: The punctuations to be merged with the previous word.
+            last_speech_timestamp: The timestamp of the last speech segment.
+        """
         if len(segments) == 0:
             return
 
@@ -851,6 +995,22 @@ class WhisperModel:
         num_frames: int,
         median_filter_width: int = 7,
     ) -> List[dict]:
+        """
+        Finds the alignment between the encoder output and the text tokens. This function uses the model's
+        alignment function to calculate the alignment. It then splits the text tokens into words and
+        calculates the start and end times for each word.
+        
+        Args:
+            tokenizer: The tokenizer to be used for tokenizing the text.
+            text_tokens: The tokens representing the text.
+            encoder_output: The output from the encoder.
+            num_frames: The number of frames in the audio.
+            median_filter_width: The width of the median filter used for smoothing the timestamps.
+            
+        Returns:
+            A list of dictionaries, each containing the word, its tokens, its start and end times, and its
+            probability.
+        """
         if len(text_tokens) == 0:
             return []
 
@@ -899,6 +1059,17 @@ def restore_speech_timestamps(
     speech_chunks: List[dict],
     sampling_rate: int,
 ) -> Iterable[Segment]:
+    """
+    Restores the original speech timestamps for each segment and word.
+    
+    Args:
+      segments: An iterable of Segment objects.
+      speech_chunks: A list of dictionaries representing speech chunks.
+      sampling_rate: The sampling rate of the audio.
+    
+    Returns:
+      An iterable of Segment objects with restored timestamps.
+    """
     ts_map = SpeechTimestampsMap(speech_chunks, sampling_rate)
 
     for segment in segments:
@@ -930,17 +1101,45 @@ def restore_speech_timestamps(
 
 
 def get_ctranslate2_storage(segment: np.ndarray) -> ctranslate2.StorageView:
+    """
+    Converts a numpy array into a CTranslate2 StorageView object.
+    
+    Args:
+      segment: A numpy array representing a segment of audio.
+    
+    Returns:
+      A CTranslate2 StorageView object.
+    """
     segment = np.ascontiguousarray(segment)
     segment = ctranslate2.StorageView.from_array(segment)
     return segment
 
 
 def get_compression_ratio(text: str) -> float:
+    """
+    Calculates the compression ratio of a given text.
+    
+    Args:
+      text: A string of text.
+    
+    Returns:
+      A float representing the compression ratio of the text.
+    """
     text_bytes = text.encode("utf-8")
     return len(text_bytes) / len(zlib.compress(text_bytes))
 
 
 def get_suppressed_tokens(tokenizer, suppress_tokens):
+    """
+    Returns a list of suppressed tokens.
+    
+    Args:
+      tokenizer: A tokenizer object.
+      suppress_tokens: A list of tokens to suppress.
+    
+    Returns:
+      A sorted set of suppressed tokens.
+    """
     if not suppress_tokens or -1 in suppress_tokens:
         return suppress_tokens
 
@@ -962,6 +1161,14 @@ def get_suppressed_tokens(tokenizer, suppress_tokens):
 
 
 def merge_punctuations(alignment: List[dict], prepended: str, appended: str):
+    """
+    Merges punctuations with the preceding or following word in the alignment.
+    
+    Args:
+      alignment: A list of dictionaries representing the alignment of words and tokens.
+      prepended: A string of punctuations to prepend to the following word.
+      appended: A string of punctuations to append to the preceding word.
+    """
     # merge prepended punctuations
     i = len(alignment) - 2
     j = len(alignment) - 1
